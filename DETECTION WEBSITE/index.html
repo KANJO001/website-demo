@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tHE kANJO - Product Origin Finder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .upload-area {
+            border: 2px dashed #3b82f6;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            background-color: #f8fafc;
+            border-color: #2563eb;
+        }
+        .upload-area.dragover {
+            background-color: #eff6ff;
+            border-color: #1d4ed8;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .product-card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-globe-americas text-blue-600 text-2xl"></i>
+                    <h1 class="text-2xl font-bold text-gray-800">DeepSite</h1>
+                </div>
+                <nav class="hidden md:flex space-x-6">
+                    <a href="#" class="text-gray-600 hover:text-blue-600">Home</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">How It Works</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">About</a>
+                    <a href="#" class="text-gray-600 hover:text-blue-600">Contact</a>
+                </nav>
+                <button class="md:hidden text-gray-600">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <section class="text-center mb-12">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Discover Where Your Products Come From</h2>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Upload a photo of any product and we'll identify its origin, manufacturer, and key specifications.
+            </p>
+        </section>
+
+        <section class="max-w-4xl mx-auto mb-12">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <div class="p-6">
+                    <div id="upload-container" class="upload-area rounded-lg p-8 text-center cursor-pointer transition-all">
+                        <div id="upload-content">
+                            <i class="fas fa-cloud-upload-alt text-blue-500 text-4xl mb-4"></i>
+                            <h3 class="text-xl font-semibold text-gray-700 mb-2">Drag & Drop Product Photo</h3>
+                            <p class="text-gray-500 mb-4">or click to browse files</p>
+                            <input type="file" id="file-input" accept="image/*" class="hidden">
+                            <button id="upload-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-full transition">
+                                Select Image
+                            </button>
+                            <p class="text-sm text-gray-400 mt-4">Supports: JPG, PNG, WEBP (Max 5MB)</p>
+                        </div>
+                        <div id="preview-container" class="hidden">
+                            <div class="flex flex-col items-center">
+                                <img id="image-preview" src="#" alt="Preview" class="max-h-64 mb-4 rounded-lg">
+                                <div class="flex space-x-3">
+                                    <button id="analyze-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-full transition">
+                                        Analyze Product
+                                    </button>
+                                    <button id="cancel-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-6 rounded-full transition">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                    <div class="flex flex-wrap justify-center gap-3">
+                        <button id="barcode-btn" class="flex items-center text-sm bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 py-2 px-4 rounded-full transition">
+                            <i class="fas fa-barcode mr-2"></i> Scan Barcode
+                        </button>
+                        <button id="search-btn" class="flex items-center text-sm bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 py-2 px-4 rounded-full transition">
+                            <i class="fas fa-search mr-2"></i> Search Manually
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="results-section" class="hidden max-w-6xl mx-auto">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden product-card">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex flex-wrap justify-between items-center mb-4">
+                        <div>
+                            <h3 id="product-name" class="text-2xl font-bold text-gray-800">Product Name</h3>
+                            <p id="product-brand" class="text-gray-600">Brand Name</p>
+                        </div>
+                        <div class="flex items-center mt-2 md:mt-0">
+                            <span id="origin-flag" class="text-2xl mr-2">🇺🇸</span>
+                            <span id="origin-country" class="font-medium">United States</span>
+                        </div>
+                    </div>
+
+                    <div class="flex overflow-x-auto pb-2 mb-4">
+                        <button class="tab-btn active px-4 py-2 font-medium text-blue-600 border-b-2 border-blue-600 whitespace-nowrap" data-tab="overview">
+                            Overview
+                        </button>
+                        <button class="tab-btn px-4 py-2 font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent whitespace-nowrap" data-tab="origin">
+                            Origin Details
+                        </button>
+                        <button class="tab-btn px-4 py-2 font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent whitespace-nowrap" data-tab="specs">
+                            Specifications
+                        </button>
+                        <button class="tab-btn px-4 py-2 font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent whitespace-nowrap" data-tab="pricing">
+                            Pricing
+                        </button>
+                    </div>
+
+                    <div id="overview" class="tab-content active">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-3">Basic Information</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Category</span>
+                                        <span id="product-category" class="font-medium">Electronics</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Model Number</span>
+                                        <span id="product-model" class="font-medium">XYZ-1234</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Release Date</span>
+                                        <span id="product-release" class="font-medium">2022</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-3">Manufacturing Details</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Manufacturer</span>
+                                        <span id="product-manufacturer" class="font-medium">ABC Corp</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Factory Location</span>
+                                        <span id="product-factory" class="font-medium">Shenzhen, China</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Certifications</span>
+                                        <span id="product-certs" class="font-medium">CE, FCC, RoHS</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="origin" class="tab-content">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-3">Production Details</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Country of Origin</span>
+                                        <span id="origin-country-detail" class="font-medium">China</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Region</span>
+                                        <span id="origin-region" class="font-medium">Guangdong Province</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Factory Name</span>
+                                        <span id="origin-factory" class="font-medium">Shenzhen Manufacturing Ltd.</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Factory Established</span>
+                                        <span id="origin-factory-year" class="font-medium">2008</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-3">Supply Chain</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Materials Source</span>
+                                        <span id="origin-materials" class="font-medium">Local & Imported</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Labor Conditions</span>
+                                        <span id="origin-labor" class="font-medium">Certified Fair Labor</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Environmental Impact</span>
+                                        <span id="origin-environment" class="font-medium">Moderate</span>
+                                    </div>
+                                </div>
+                                <div class="mt-6">
+                                    <div class="h-40 bg-gray-100 rounded-lg flex items-center justify-center">
+                                        <p class="text-gray-500">Factory Location Map</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="specs" class="tab-content">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-3">Physical Specifications</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Dimensions</span>
+                                        <span id="specs-dimensions" class="font-medium">10.2 × 6.8 × 0.3 in</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Weight</span>
+                                        <span id="specs-weight" class="font-medium">1.2 lbs</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Materials</span>
+                                        <span id="specs-materials" class="font-medium">Aluminum, Glass, Plastic</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Color Options</span>
+                                        <span id="specs-colors" class="font-medium">Black, Silver, Blue</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-3">Technical Specifications</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Power Requirements</span>
+                                        <span id="specs-power" class="font-medium">100-240V, 50/60Hz</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Battery Life</span>
+                                        <span id="specs-battery" class="font-medium">Up to 10 hours</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Connectivity</span>
+                                        <span id="specs-connectivity" class="font-medium">Wi-Fi 6, Bluetooth 5.0</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Warranty</span>
+                                        <span id="specs-warranty" class="font-medium">1 year limited</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="pricing" class="tab-content">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-3">Price Information</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Manufacturer Price</span>
+                                        <span id="pricing-manufacturer" class="font-medium">$120.00</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Average Retail Price</span>
+                                        <span id="pricing-retail" class="font-medium">$299.99</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Price Range</span>
+                                        <span id="pricing-range" class="font-medium">$279.99 - $329.99</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Price History</span>
+                                        <span id="pricing-history" class="font-medium">Stable (fluctuates ±5%)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-700 mb-3">Market Data</h4>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Availability</span>
+                                        <span id="market-availability" class="font-medium">Widely available</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Market Share</span>
+                                        <span id="market-share" class="font-medium">12% of category</span>
+                                    </div>
+                                    <div class="flex justify-between border-b border-gray-100 pb-2">
+                                        <span class="text-gray-500">Competitors</span>
+                                        <span id="market-competitors" class="font-medium">Brand X, Brand Y</span>
+                                    </div>
+                                </div>
+                                <div class="mt-6">
+                                    <div class="h-40 bg-gray-100 rounded-lg flex items-center justify-center">
+                                        <p class="text-gray-500">Price Trend Chart</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                    <div class="flex flex-wrap justify-between items-center">
+                        <div class="mb-3 md:mb-0">
+                            <p class="text-sm text-gray-500">Is this information accurate?</p>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button id="edit-btn" class="flex items-center text-sm bg-white hover:bg-gray-100 border border-gray-300 text-gray-700 py-2 px-4 rounded-full transition">
+                                <i class="fas fa-edit mr-2"></i> Edit Details
+                            </button>
+                            <button id="download-btn" class="flex items-center text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-full transition">
+                                <i class="fas fa-download mr-2"></i> Download PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="manual-form" class="hidden max-w-2xl mx-auto bg-white rounded-xl shadow-md overflow-hidden p-6 mb-12">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">Submit Product Information</h3>
+            <form id="product-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="form-name" class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                        <input type="text" id="form-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="form-brand" class="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                        <input type="text" id="form-brand" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="form-category" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <select id="form-category" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Select category</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Clothing">Clothing</option>
+                            <option value="Home Goods">Home Goods</option>
+                            <option value="Food & Beverage">Food & Beverage</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="form-model" class="block text-sm font-medium text-gray-700 mb-1">Model Number</label>
+                        <input type="text" id="form-model" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Country of Origin</label>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="origin" value="China" class="h-4 w-4 text-blue-600 focus:ring-blue-500">
+                            <span>China</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="origin" value="USA" class="h-4 w-4 text-blue-600 focus:ring-blue-500">
+                            <span>USA</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="origin" value="Germany" class="h-4 w-4 text-blue-600 focus:ring-blue-500">
+                            <span>Germany</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="radio" name="origin" value="Other" class="h-4 w-4 text-blue-600 focus:ring-blue-500">
+                            <span>Other</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label for="form-specs" class="block text-sm font-medium text-gray-700 mb-1">Key Specifications</label>
+                    <textarea id="form-specs" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Materials, dimensions, features..."></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancel-form" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 px-6 rounded-full transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-full transition">
+                        Submit Product
+                    </button>
+                </div>
+            </form>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">DeepSite</h3>
+                    <p class="text-gray-400">Discover the origin and details of any product with our advanced image recognition technology.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Home</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">How It Works</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">About Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Legal</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Terms of Service</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white transition">Cookie Policy</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Connect</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-twitter text-xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-facebook text-xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-instagram text-xl"></i></a>
+                        <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-linkedin text-xl"></i></a>
+                    </div>
+                    <div class="mt-4">
+                        <p class="text-gray-400">Subscribe to our newsletter</p>
+                        <div class="flex mt-2">
+                            <input type="email" placeholder="Your email" class="px-3 py-2 bg-gray-700 text-white rounded-l-lg focus:outline-none w-full">
+                            <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-r-lg">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
+                <p>&copy; 2023 DeepSite. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const uploadContainer = document.getElementById('upload-container');
+        const uploadContent = document.getElementById('upload-content');
+        const previewContainer = document.getElementById('preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const fileInput = document.getElementById('file-input');
+        const uploadBtn = document.getElementById('upload-btn');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const barcodeBtn = document.getElementById('barcode-btn');
+        const searchBtn = document.getElementById('search-btn');
+        const resultsSection = document.getElementById('results-section');
+        const manualForm = document.getElementById('manual-form');
+        const cancelFormBtn = document.getElementById('cancel-form');
+        const productForm = document.getElementById('product-form');
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const editBtn = document.getElementById('edit-btn');
+        const downloadBtn = document.getElementById('download-btn');
+
+        // Sample product data (would come from API in real app)
+        const sampleProduct = {
+            name: "Ultra HD Smart TV",
+            brand: "TechVision",
+            category: "Electronics",
+            model: "TV-4K65X",
+            release: "2023",
+            manufacturer: "TechVision Electronics",
+            factory: "Shenzhen, China",
+            certs: "CE, FCC, RoHS",
+            originCountry: "China",
+            originRegion: "Guangdong Province",
+            originFactory: "Shenzhen Manufacturing Ltd.",
+            originFactoryYear: "2008",
+            originMaterials: "Local & Imported",
+            originLabor: "Certified Fair Labor",
+            originEnvironment: "Moderate",
+            specsDimensions: "57.1 × 32.7 × 2.4 in",
+            specsWeight: "52.9 lbs",
+            specsMaterials: "Metal, Plastic, Glass",
+            specsColors: "Black, Silver",
+            specsPower: "100-240V, 50/60Hz",
+            specsBattery: "N/A",
+            specsConnectivity: "Wi-Fi 6, Bluetooth 5.2, Ethernet",
+            specsWarranty: "2 years limited",
+            pricingManufacturer: "$480.00",
+            pricingRetail: "$899.99",
+            pricingRange: "$849.99 - $949.99",
+            pricingHistory: "New product",
+            marketAvailability: "In stock",
+            marketShare: "8% of category",
+            marketCompetitors: "Brand A, Brand B"
+        };
+
+        // Event Listeners
+        uploadBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+        uploadContainer.addEventListener('dragover', handleDragOver);
+        uploadContainer.addEventListener('dragleave', handleDragLeave);
+        uploadContainer.addEventListener('drop', handleDrop);
+        analyzeBtn.addEventListener('click', analyzeProduct);
+        cancelBtn.addEventListener('click', resetUpload);
+        searchBtn.addEventListener('click', showManualForm);
+        cancelFormBtn.addEventListener('click', hideManualForm);
+        productForm.addEventListener('submit', handleFormSubmit);
+        editBtn.addEventListener('click', showManualForm);
+        downloadBtn.addEventListener('click', downloadReport);
+
+        // Tab switching
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                switchTab(tabId);
+            });
+        });
+
+        // Functions
+        function handleFileSelect(e) {
+            let file;
+            if (e.type === 'change') {
+                file = e.target.files[0];
+            } else if (e.type === 'drop') {
+                file = e.dataTransfer.files[0];
+            }
+
+            if (file && file.type.match('image.*')) {
+                const reader = new FileReader();
+
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    uploadContent.classList.add('hidden');
+                    previewContainer.classList.remove('hidden');
+                }
+
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadContainer.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadContainer.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadContainer.classList.remove('dragover');
+            handleFileSelect(e);
+        }
+
+        function analyzeProduct() {
+            // Show loading state
+            analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Analyzing...';
+            analyzeBtn.disabled = true;
+
+            // Simulate API call with timeout
+            setTimeout(() => {
+                // Populate with sample data
+                populateProductData(sampleProduct);
+
+                // Show results
+                resultsSection.classList.remove('hidden');
+                uploadContainer.classList.add('hidden');
+
+                // Reset analyze button
+                analyzeBtn.innerHTML = 'Analyze Product';
+                analyzeBtn.disabled = false;
+
+                // Scroll to results
+                resultsSection.scrollIntoView({ behavior: 'smooth' });
+            }, 2000);
+        }
+
+        function populateProductData(data) {
+            // Core Info
+            document.getElementById('product-name').textContent = data.name;
+            document.getElementById('product-brand').textContent = data.brand;
+            document.getElementById('product-category').textContent = data.category;
+            document.getElementById('product-model').textContent = data.model;
+            document.getElementById('product-release').textContent = data.release;
+            document.getElementById('product-manufacturer').textContent = data.manufacturer;
+            document.getElementById('product-factory').textContent = data.factory;
+            document.getElementById('product-certs').textContent = data.certs;
+
+            // Origin
+            document.getElementById('origin-country-detail').textContent = data.originCountry;
+            document.getElementById('origin-region').textContent = data.originRegion;
+            document.getElementById('origin-factory').textContent = data.originFactory;
+            document.getElementById('origin-factory-year').textContent = data.originFactoryYear;
+            document.getElementById('origin-materials').textContent = data.originMaterials;
+            document.getElementById('origin-labor').textContent = data.originLabor;
+            document.getElementById('origin-environment').textContent = data.originEnvironment;
+
+            // Set flag emoji based on country
+            const flagEmoji = getFlagEmoji(data.originCountry);
+            document.getElementById('origin-flag').textContent = flagEmoji;
+            document.getElementById('origin-country').textContent = data.originCountry;
+
+            // Specs
+            document.getElementById('specs-dimensions').textContent = data.specsDimensions;
+            document.getElementById('specs-weight').textContent = data.specsWeight;
+            document.getElementById('specs-materials').textContent = data.specsMaterials;
+            document.getElementById('specs-colors').textContent = data.specsColors;
+            document.getElementById('specs-power').textContent = data.specsPower;
+            document.getElementById('specs-battery').textContent = data.specsBattery;
+            document.getElementById('specs-connectivity').textContent = data.specsConnectivity;
+            document.getElementById('specs-warranty').textContent = data.specsWarranty;
+
+            // Pricing
+            document.getElementById('pricing-manufacturer').textContent = data.pricingManufacturer;
+            document.getElementById('pricing-retail').textContent = data.pricingRetail;
+            document.getElementById('pricing-range').textContent = data.pricingRange;
+            document.getElementById('pricing-history').textContent = data.pricingHistory;
+            document.getElementById('market-availability').textContent = data.marketAvailability;
+            document.getElementById('market-share').textContent = data.marketShare;
+            document.getElementById('market-competitors').textContent = data.marketCompetitors;
+        }
+
+        function getFlagEmoji(country) {
+            const flagEmojis = {
+                'China': '🇨🇳',
+                'USA': '🇺🇸',
+                'Germany': '🇩🇪',
+                'Japan': '🇯🇵',
+                'South Korea': '🇰🇷',
+                'Vietnam': '🇻🇳',
+                'India': '🇮🇳',
+                'Mexico': '🇲🇽',
+                'Canada': '🇨🇦',
+                'UK': '🇬🇧',
+                'France': '🇫🇷',
+                'Italy': '🇮🇹'
+            };
+            return flagEmojis[country] || '🌍';
+        }
+
+        function resetUpload() {
+            fileInput.value = '';
+            imagePreview.src = '#';
+            previewContainer.classList.add('hidden');
+            uploadContent.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            uploadContainer.classList.remove('hidden');
+        }
+
+        function showManualForm() {
+            manualForm.classList.remove('hidden');
+            resultsSection.classList.add('hidden');
+            uploadContainer.classList.add('hidden');
+            manualForm.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideManualForm() {
+            manualForm.classList.add('hidden');
+            uploadContainer.classList.remove('hidden');
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+
+            // Get form values
+            const formData = {
+                name: document.getElementById('form-name').value,
+                brand: document.getElementById('form-brand').value,
+                category: document.getElementById('form-category').value,
+                model: document.getElementById('form-model').value,
+                origin: document.querySelector('input[name="origin"]:checked')?.value || 'Unknown',
+                specs: document.getElementById('form-specs').value
+            };
+
+            // Create a basic product object from form data
+            const productFromForm = {
+                name: formData.name,
+                brand: formData.brand,
+                category: formData.category,
+                model: formData.model,
+                release: "Unknown",
+                manufacturer: formData.brand,
+                factory: formData.origin,
+                certs: "Unknown",
+                originCountry: formData.origin,
+                originRegion: "Unknown",
+                originFactory: "Unknown",
+                originFactoryYear: "Unknown",
+                originMaterials: "Unknown",
+                originLabor: "Unknown",
+                originEnvironment: "Unknown",
+                specsDimensions: "Unknown",
+                specsWeight: "Unknown",
+                specsMaterials: formData.specs,
+                specsColors: "Unknown",
+                specsPower: "Unknown",
+                specsBattery: "Unknown",
+                specsConnectivity: "Unknown",
+                specsWarranty: "Unknown",
+                pricingManufacturer: "Unknown",
+                pricingRetail: "Unknown",
+                pricingRange: "Unknown",
+                pricingHistory: "Unknown",
+                marketAvailability: "Unknown",
+                marketShare: "Unknown",
+                marketCompetitors: "Unknown"
+            };
+
+            // Populate and show results
+            populateProductData(productFromForm);
+            manualForm.classList.add('hidden');
+            resultsSection.classList.remove('hidden');
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function switchTab(tabId) {
+            // Hide all tab contents
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Deactivate all tab buttons
+            tabButtons.forEach(button => {
+                button.classList.remove('active', 'text-blue-600', 'border-blue-600');
+                button.classList.add('text-gray-500', 'border-transparent');
+            });
+
+            // Activate selected tab
+            const selectedTab = document.getElementById(tabId);
+            const selectedButton = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+
+            selectedTab.classList.add('active');
+            selectedButton.classList.add('active', 'text-blue-600', 'border-blue-600');
+            selectedButton.classList.remove('text-gray-500', 'border-transparent');
+        }
+
+        function downloadReport() {
+            // In a real app, this would generate a PDF
+            alert('PDF report download would be generated here in a production environment.');
+        }
+    </script>
+</body>
+</html>
